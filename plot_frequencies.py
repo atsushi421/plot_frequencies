@@ -1,3 +1,4 @@
+import argparse
 from collections import deque
 
 import matplotlib.animation as animation  # type: ignore
@@ -5,37 +6,52 @@ import matplotlib.pyplot as plt  # type: ignore
 import psutil  # type: ignore
 
 MAX_LEGEND_ROWS = 20
-
-fig, ax = plt.subplots(figsize=(10, 4))
-num_cpus = psutil.cpu_count()
-cpu_freqs = deque(maxlen=30)  # type: ignore
-lines = [plt.plot([], [], label=f'CPU {i}')[0] for i in range(num_cpus)]
-
-plt.subplots_adjust(right=0.75)
-ncol = (num_cpus + MAX_LEGEND_ROWS-1) // MAX_LEGEND_ROWS
-ax.legend(
-    loc='center right', fontsize='small', ncol=ncol,
-    framealpha=1.0, fancybox=True, facecolor='white', bbox_to_anchor=(1.33, 0.5)
-)
+BUFFER_SIZE = 30
 
 
-def init() -> list:
-    for line in lines:
-        line.set_data([], [])
-    ax.set_xlim(0, cpu_freqs.maxlen)
-    ax.set_ylim(((psutil.cpu_freq().min / 10**3) * 0.99), ((psutil.cpu_freq().max / 10**3) * 1.01))
-    ax.set_ylabel('CPU Frequency [GHz]')
-    return lines
+def main(cpu_indices: list[int]) -> None:
+    fig, ax = plt.subplots(figsize=(10, 4))
+    num_cpus = len(cpu_indices)
+    cpu_freqs = {cpu_i: deque(maxlen=BUFFER_SIZE) for cpu_i in cpu_indices}  # type: ignore
+    lines = [plt.plot([], [], label=f'CPU {cpu_i}')[0] for cpu_i in cpu_indices]
+    plt.subplots_adjust(right=0.75)
+    ncol = (num_cpus + MAX_LEGEND_ROWS - 1) // MAX_LEGEND_ROWS
+    ax.legend(loc='center right', fontsize='small', ncol=ncol, bbox_to_anchor=(1.33, 0.5))
+
+    def init() -> list:
+        ax.set_xlim(0, BUFFER_SIZE)
+        freq_infos = [cpu_freq_info for cpu_i, cpu_freq_info in enumerate(
+            psutil.cpu_freq(percpu=True)) if cpu_i in cpu_indices]
+        min_freq_mhz = min([freq_info.min for freq_info in freq_infos])
+        max_freq_mhz = max([freq_info.max for freq_info in freq_infos])
+        margin = (max_freq_mhz - min_freq_mhz) * 0.01
+        ax.set_ylim(((min_freq_mhz * 10**(-3)) - margin),
+                    ((max_freq_mhz * 10**(-3)) + margin))
+        ax.set_ylabel('CPU Frequency [GHz]')
+        return lines
+
+    def update(frame) -> list:
+        for cpu_i, freq_info in enumerate(psutil.cpu_freq(percpu=True)):
+            if cpu_i in cpu_indices:
+                cpu_freqs[cpu_i].append(freq_info.current)
+
+        for cpu_i, line in zip(cpu_indices, lines):
+            line.set_data(range(len(cpu_freqs[cpu_i])), list(cpu_freqs[cpu_i]))
+        return lines
+
+    _ = animation.FuncAnimation(fig, update, init_func=init, blit=True, interval=100)
+    plt.show()
 
 
-def update(frame) -> list:
-    freqs = [f.current for f in psutil.cpu_freq(percpu=True)]
-    cpu_freqs.append(freqs)
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Plot CPU frequencies.")
+    parser.add_argument('cpu_indices', nargs='*', type=int,
+                        help='List of CPU indexes to plot', default=[])
+    args = parser.parse_args()
 
-    for i, line in enumerate(lines):
-        line.set_data(range(len(cpu_freqs)), [f[i] for f in cpu_freqs])
-    return lines
+    if args.cpu_indices:
+        cpu_indices = args.cpu_indices
+    else:
+        cpu_indices = list(range(psutil.cpu_count()))
 
-
-ani = animation.FuncAnimation(fig, update, init_func=init, blit=True, interval=100)
-plt.show()
+    main(cpu_indices)
