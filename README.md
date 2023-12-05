@@ -1,4 +1,7 @@
 # plot_frequencies
+```bash
+$ python3 plot_frequencies.py
+```
 
 ```
 usage: plot_frequencies.py [-h] [cpu_indices ...]
