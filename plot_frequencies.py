@@ -22,11 +22,10 @@ def main(cpu_indices: list[int]) -> None:
         ax.set_xlim(0, BUFFER_SIZE)
         freq_infos = [cpu_freq_info for cpu_i, cpu_freq_info in enumerate(
             psutil.cpu_freq(percpu=True)) if cpu_i in cpu_indices]
-        min_freq_mhz = min([freq_info.min for freq_info in freq_infos])
-        max_freq_mhz = max([freq_info.max for freq_info in freq_infos])
-        margin = (max_freq_mhz - min_freq_mhz) * 0.01
-        ax.set_ylim(((min_freq_mhz * 10**(-3)) - margin),
-                    ((max_freq_mhz * 10**(-3)) + margin))
+        min_freq_ghz = min([freq_info.min for freq_info in freq_infos]) * 10**(-3)
+        max_freq_ghz = max([freq_info.max for freq_info in freq_infos]) * 10**(-3)
+        margin = (max_freq_ghz - min_freq_ghz) * 0.01
+        ax.set_ylim((min_freq_ghz - margin), (max_freq_ghz + margin))
         ax.set_ylabel('CPU Frequency [GHz]')
         return lines
 
