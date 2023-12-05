@@ -44,7 +44,7 @@ def main(cpu_indices: list[int]) -> None:
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Plot CPU frequencies.")
+    parser = argparse.ArgumentParser()
     parser.add_argument('cpu_indices', nargs='*', type=int,
                         help='List of CPU indexes to plot', default=[])
     args = parser.parse_args()
