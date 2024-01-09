@@ -1,4 +1,13 @@
 # plot_frequencies
+
+## Setup
+
+```bash
+$ pip install -r requirements.txt
+```
+
+## Usage
+
 ```bash
 $ python3 plot_frequencies.py
 ```
