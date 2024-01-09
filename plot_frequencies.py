@@ -40,8 +40,8 @@ def main(cpu_indices: list[int], no_lib: bool) -> None:
     def init() -> list:
         ax.set_xlim(0, BUFFER_SIZE)
         if no_lib:
-            min_freq_ghz = min(get_freq_min_max(cpu_i)[0] for cpu_i in cpu_indices) * 10**(-3)
-            max_freq_ghz = max(get_freq_min_max(cpu_i)[1] for cpu_i in cpu_indices) * 10**(-3)
+            min_freq_ghz = min(get_freq_min_max(cpu_i)[0] for cpu_i in cpu_indices) * 10**(-6)
+            max_freq_ghz = max(get_freq_min_max(cpu_i)[1] for cpu_i in cpu_indices) * 10**(-6)
         else:
             freq_infos = [cpu_freq_info for cpu_i, cpu_freq_info in enumerate(
                 psutil.cpu_freq(percpu=True)) if cpu_i in cpu_indices]
@@ -54,8 +54,8 @@ def main(cpu_indices: list[int], no_lib: bool) -> None:
 
     def update(frame) -> list:
         if no_lib:
-            for cpu_i, freq_ghz in enumerate(get_current_cpu_freq()):
-                cpu_freqs[cpu_i].append(freq_ghz)
+            for cpu_i, freq_mhz in enumerate(get_current_cpu_freq()):
+                cpu_freqs[cpu_i].append(freq_mhz * 10**(-3))
         else:
             for cpu_i, freq_info in enumerate(psutil.cpu_freq(percpu=True)):
                 if cpu_i in cpu_indices:
